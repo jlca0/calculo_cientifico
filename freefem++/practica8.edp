@@ -1,0 +1,165 @@
+ verbosity = 0;  // Apagamos los comentarios del solver
+ real t0 = 0.0;  // Declaramos variables de tiempo para medir el tiempo de ejecución.
+ real t1 = 0.0;
+
+ ///// EJERCICIO 1 /////
+ cout << "EJERCICIO 1" << endl;
+
+ func f = 2*pi^2*sin(pi*x)*sin(pi*y); 
+ func g = 0;                
+ func uexacta = sin(pi*x)*sin(pi*y); 
+ real error0 = 1.0;
+ real error1 = 1.0;
+ real orden = 1.0;
+ 
+ for(int j = 16; j <= 128; j = 2*j){
+  mesh Th=square(j, j);
+  fespace Vh(Th,P1);     // P1 FE space
+  Vh uh,vh;   
+
+  problem laplace(uh,vh) =                    //  definion of  the problem 
+      int2d(Th)( dx(uh)*dx(vh) + dy(uh)*dy(vh) ) //  bilinear form
+    - int2d(Th)( f*vh )                          //  linear form
+    + on(1,2,3,4,uh=g) ;                      //  boundary condition form
+
+    t0 = clock();
+    laplace; 
+    t1 = clock();
+    cout << "Para N = " << j << " el tiempo en CPU es: " << t1 - t0 << endl;
+
+    error1 = sqrt(int2d(Th)((uexacta-uh)^2));
+    orden = log(error0/error1)/log(2.0);
+    if(j == 16){
+      cout << "El orden con N = " << j << " es ------" << endl;
+    } else {
+      cout << "El orden con N = " << j << " es " << orden << endl;
+    }
+    error0 = error1;
+ }
+
+ ///// EJERCICIO 2 /////
+ cout << endl << "EJERCICIO 2" << endl;
+ error0 = 1.0;
+ error1 = 1.0;
+
+  for(int j = 16; j <= 128; j = 2*j){
+  mesh Th=square(j, j);
+  fespace Vh(Th,P2);     // P1 FE space
+  Vh uh,vh;   
+
+  problem laplace(uh,vh) =                    //  definion of  the problem 
+      int2d(Th)( dx(uh)*dx(vh) + dy(uh)*dy(vh) ) //  bilinear form
+    - int2d(Th)( f*vh )                          //  linear form
+    + on(1,2,3,4,uh=g) ;                      //  boundary condition form
+
+    t0 = clock();
+    laplace; 
+    t1 = clock();
+    cout << "Para N = " << j << " el tiempo en CPU es: " << t1 - t0 << endl;
+
+    error1 = sqrt(int2d(Th)((uexacta-uh)^2));
+    orden = log(error0/error1)/log(2.0);
+    if(j == 16){
+      cout << "El orden con N = " << j << " es ------" << endl;
+    } else {
+      cout << "El orden con N = " << j << " es " << orden << endl;
+    }
+    error0 = error1;
+ }
+
+ ///// EJERCICIO 3 /////
+ cout << endl << "EJERCICIO 3" << endl;
+
+ border C(t=0, 2*pi){ x=cos(t); y=sin(t); label=1; }
+ mesh Th3 = buildmesh(C(250));  
+ fespace Vh3(Th3, P1);
+ func k = (x <= 0) ? 1.0 : 0.1;
+ real uex = 18.0;
+ real T = 10;
+ real dt = 0.1;
+ real alpha = 0.5;
+
+ Vh3 uh3, vh3;
+ Vh3 uold = 30;
+
+ problem calordisco(uh3, vh3) =
+     int2d(Th3)(vh3*uh3) + int2d(Th3)(dt*k*(dx(uh3)*dx(vh3) + dy(uh3)*dy(vh3))) + int1d(Th3,1)(alpha*dt*vh3*uh3)
+     - int2d(Th3)(uold*vh3) - int1d(Th3,1)(alpha*dt*uex*vh3);
+
+ real t = 0.0;
+ int cont = 0;
+ t0 = clock();
+ while(t < T){
+     t += dt;
+     calordisco;
+     if(cont % 10 == 0){
+         plot(uh3, fill=false, value=true, wait=true, cmm = "Euler");
+     }
+     uold = uh3;
+     cont += 1;
+ }
+ t1 = clock();
+ cout << "Tiempo CPU: " << t1 - t0 << endl;
+
+
+
+ mesh Th4 = buildmesh(C(250));  
+ fespace Vh4(Th4, P1);
+
+ Vh4 uh4, vh4;
+ Vh4 uold2 = 30;
+
+ problem calordiscocn(uh4, vh4) =
+     int2d(Th4)(vh4*uh4) + int2d(Th4)(0.5*dt*k*(dx(uh4)*dx(vh4) + dy(uh4)*dy(vh4))) + int1d(Th4,1)(alpha*0.5*dt*vh4*uh4)
+     - int2d(Th4)(uold2*vh4) - int2d(Th4)(0.5*dt*k*(dx(uold2)*dx(vh4) + dy(uold2)*dy(vh4))) + int1d(Th4,1)(alpha*0.5*dt*uold2*vh4) - int1d(Th4,1)(alpha*dt*uex*vh4);
+ t = 0.0;
+ cont = 0;
+
+ t0 = clock();
+ while(t < T){
+     t += dt;
+     calordiscocn;
+     if(cont % 10 == 0){
+         plot(uh4, fill=false, value=true, wait=true, cmm = "Crank-Nicolson");
+     }
+     uold2 = uh4;
+     cont += 1;
+ }
+ t1 = clock();
+    cout << "Tiempo CPU: " << t1 - t0 << endl;
+
+ ///// EJERCICIO 4 /////
+ cout << endl << "EJERCICIO 4" << endl;
+
+ border fuera(t=0, 2*pi){ x=4*cos(t); y=4*sin(t); label=1; }
+ border dentro(t=0, 2*pi){ x=cos(t); y=-sin(t); label=2; }
+ mesh Th5 = buildmesh(dentro(30) + fuera(350)); 
+ fespace Vh5(Th5, P1);
+ real cte = 0.1;
+ T = 2.0;
+ dt = 0.01;
+
+ Vh5 uh5, vh5;
+ Vh5 uold5 = ((x-2.5)^2 + y^2 < 0.5^2) ? 10*exp(4*(1-1/(1-4*((x-2.5)^2+y^2)))) : 0.0;
+
+ problem canal(uh5, vh5) =
+      int2d(Th5)(vh5*uh5) + int2d(Th5)(dt*vh5*(-4*y*dx(uh5) + 4*x*dy(uh5))) + int2d(Th5)(dt*cte*(dx(vh5)*dx(uh5) + dy(vh5)*dy(uh5)))
+     - int2d(Th5)(vh5*uold5);
+
+ t = 0.0;
+ cont = 0;
+
+ t0 = clock();
+ while(t < T){
+     t += dt;
+     canal;
+     if(cont % 10 == 0){
+         plot(uh5, fill=true, value=true, wait=true, cmm = "Canal");
+     }
+     uold5 = uh5;
+     cont += 1;
+ }
+ t1 = clock();
+    cout << "Tiempo CPU: " << t1 - t0 << endl;
+
+
